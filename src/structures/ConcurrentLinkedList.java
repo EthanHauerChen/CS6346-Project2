@@ -6,8 +6,6 @@ import java.util.concurrent.Semaphore;
 public class ConcurrentLinkedList {
     private final Node anchor = new Node(null);
 
-
-
     public String toString() {
         return this.toArrayList().toString();
     }
