@@ -36,11 +36,9 @@ public class ConcurrentBST {
         if (current.key == key) return current;
 
         if (current.key < key) {
-            // look to right since key is larger
             return recurseAndSearch(current.right, key);
 
         } else {
-            // look to left since key is smaller
             return recurseAndSearch(current.left, key);
         }
     }
@@ -63,23 +61,18 @@ public class ConcurrentBST {
     private Node recurseAndRemove(Node current, int key) {
         if (current == null) return null;
 
-        if (current.key < key) {
-            // look to right since key is larger
-            recurseAndRemove(current.right, key);
+        if (key < current.key) {
+            current.left = recurseAndRemove(current.left, key);
 
-        } else if (current.key > key) {
-            // look to left since key is smaller
-            recurseAndRemove(current.left, key);
+        } else if (key > current.key) {
+            current.right = recurseAndRemove(current.right, key);
 
         } else {
-            if (current.left == null && current.right == null) {
-                current = null;
+            if (current.left == null) {
+                return current.right;
 
             } else if (current.right == null) {
-                current = current.left;
-
-            } else if (current.left == null) {
-                current = current.right;
+                return current.left;
 
             } else {
                 Node temp = findMinFromRight(current.right);
