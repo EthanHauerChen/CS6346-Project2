@@ -5,39 +5,32 @@ import common.AbstractConcurrentNode;
 import java.util.ArrayList;
 
 public class ConcurrentBST {
-    private Node root;
+    private Node beforeRoot = new Node(null);
 
     public boolean search(int key) {
         try {
-            if (root == null) return false;
-            root.enterQueueAsReader();
-            return recurseAndSearch(root, key) != null;
+            beforeRoot.enterQueueAsReader();
+            return recurseAndSearch(beforeRoot, key) != null;
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public void add(int key) {
         try {
-            if (root == null) {
-                root = new Node(key);
-
-            } else {
-                root.enterQueueAsWriter();
-                recurseAndAdd(root, key);
-            }
+            beforeRoot.enterQueueAsWriter();
+            recurseAndAdd(beforeRoot, key);
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public void remove(int key) {
         try {
-            if (root == null) return;
-            root.enterQueueAsWriter();
-            root = recurseAndRemove(root, key);
+            beforeRoot.enterQueueAsWriter();
+            beforeRoot = recurseAndRemove(beforeRoot, key);
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public ArrayList<Integer> toArrayList() {
         ArrayList<Integer> list = new ArrayList<>();
-        traverse(root, list);
+        traverse(beforeRoot.right, list);
         return list;
     }
 
@@ -49,7 +42,7 @@ public class ConcurrentBST {
     }
 
     private Node recurseAndSearch(Node current, int key) throws InterruptedException {
-        if (current.key < key) { // goes right
+        if (current.key == null || current.key < key) { // goes right
             if (current.right == null) return current.exitRead(null);
             current.right.enterQueueAsReader();
             current.decrementReadCountAndWait();
@@ -67,7 +60,7 @@ public class ConcurrentBST {
     }
 
     private Node recurseAndAdd(Node current, int key) throws InterruptedException {
-        if (current.key < key) { // goes right
+        if (current.key == null || current.key < key) { // goes right
             if (current.right == null) {
                 current.right = new Node(key);
                 return current.exitWrite(current.right);
@@ -93,7 +86,7 @@ public class ConcurrentBST {
     private Node recurseAndRemove(Node current, int key) throws InterruptedException {
         if (current == null) return null;
 
-        if (current.key < key) { // goes right
+        if (current.key == null || current.key < key) { // goes right
             if (current.right != null) current.right.enterQueueAsWriter();
             current.right = recurseAndRemove(current.right, key);
             current.rwMutex.release();
