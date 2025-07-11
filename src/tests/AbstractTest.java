@@ -1,6 +1,8 @@
 package tests;
 
 
+import java.util.Arrays;
+
 public abstract class AbstractTest {
 
     public abstract void beforeEach();
@@ -16,8 +18,10 @@ public abstract class AbstractTest {
         try {
             callback.run();
             System.out.println("SUCCESS");
+
         } catch (Exception e) {
             System.out.println("FAILURE");
+            throw e;
         }
     }
 }

@@ -1,21 +1,38 @@
 package structures;
 
+import common.AbstractConcurrentNode;
+
 import java.util.ArrayList;
 
 public class ConcurrentBST {
     private Node root;
 
     public boolean search(int key) {
-        return this.recurseAndSearch(root, key) != null;
+        try {
+            if (root == null) return false;
+            root.enterQueueAsReader();
+            return recurseAndSearch(root, key) != null;
+        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public void add(int key) {
-        if (this.root == null) this.root = new Node(key);
-        this.recurseAndAdd(root, key);
+        try {
+            if (root == null) {
+                root = new Node(key);
+
+            } else {
+                root.enterQueueAsWriter();
+                recurseAndAdd(root, key);
+            }
+        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public void remove(int key) {
-        root = this.recurseAndRemove(root, key);
+        try {
+            if (root == null) return;
+            root.enterQueueAsWriter();
+            root = recurseAndRemove(root, key);
+        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public ArrayList<Integer> toArrayList() {
@@ -31,72 +48,101 @@ public class ConcurrentBST {
         traverse(current.right, list);
     }
 
-    private Node recurseAndSearch(Node current, int key) {
-        if (current == null) return null;
-        if (current.key == key) return current;
-
-        if (current.key < key) {
+    private Node recurseAndSearch(Node current, int key) throws InterruptedException {
+        if (current.key < key) { // goes right
+            if (current.right == null) return current.exitRead(null);
+            current.right.enterQueueAsReader();
+            current.decrementReadCountAndWait();
             return recurseAndSearch(current.right, key);
-
-        } else {
-            return recurseAndSearch(current.left, key);
-        }
-    }
-
-    private Node recurseAndAdd(Node current, int key) {
-        if (current.key < key) {
-            if (current.right != null) return recurseAndAdd(current.right, key);
-            current.right = new Node(key);
-            return current.right;
-
-        } else if (current.key > key) {
-            if (current.left != null) return recurseAndAdd(current.left, key);
-            current.left = new Node(key);
-            return current.left;
         }
 
-        return null;
+        if (current.key > key) { // goes left
+           if (current.left == null) return current.exitRead(null);
+           current.left.enterQueueAsReader();
+           current.decrementReadCountAndWait();
+           return recurseAndSearch(current.left, key);
+        }
+
+        return current.exitRead(current);
     }
 
-    private Node recurseAndRemove(Node current, int key) {
+    private Node recurseAndAdd(Node current, int key) throws InterruptedException {
+        if (current.key < key) { // goes right
+            if (current.right == null) {
+                current.right = new Node(key);
+                return current.exitWrite(current.right);
+            }
+            current.right.enterQueueAsWriter();
+            current.rwMutex.release();
+            return recurseAndAdd(current.right, key);
+        }
+
+        if (current.key > key) { // goes left
+            if (current.left == null) {
+                current.left = new Node(key);
+                return current.exitWrite(current.left);
+            }
+            current.left.enterQueueAsWriter();
+            current.rwMutex.release();
+            return recurseAndAdd(current.left, key);
+        }
+
+        return current.exitWrite(null);
+    }
+
+    private Node recurseAndRemove(Node current, int key) throws InterruptedException {
         if (current == null) return null;
 
-        if (key < current.key) {
-            current.left = recurseAndRemove(current.left, key);
-
-        } else if (key > current.key) {
+        if (current.key < key) { // goes right
+            if (current.right != null) current.right.enterQueueAsWriter();
             current.right = recurseAndRemove(current.right, key);
-
-        } else {
-            if (current.left == null) {
-                return current.right;
-
-            } else if (current.right == null) {
-                return current.left;
-
-            } else {
-                Node temp = findMinFromRight(current.right);
-                current.key = temp.key;
-                current.right = recurseAndRemove(current.right, temp.key);
-            }
+            current.rwMutex.release();
+            return current.exitWrite(current);
         }
-        return current;
+
+        if (current.key > key) { // goes left
+            if (current.left != null) current.left.enterQueueAsWriter();
+            current.left = recurseAndRemove(current.left, key);
+            current.rwMutex.release();
+            return current.exitWrite(current);
+        }
+
+        if (current.left == null) {
+            return current.exitWrite(current.right);
+        }
+
+        if (current.right == null) {
+            return current.exitWrite(current.left);
+        }
+
+        // find node with the smallest key in right subtree
+        current.right.enterQueueAsReader();
+        Node temp = findMinFromRight(current.right);
+
+        // remove node with the smallest key in right subtree
+        current.key = temp.key;
+        current.right.enterQueueAsWriter();
+        current.right = recurseAndRemove(current.right, temp.key);
+
+        return current.exitWrite(current);
     }
 
-    private Node findMinFromRight(Node node) {
+    private Node findMinFromRight(Node node) throws InterruptedException {
         while (node.left != null) {
+            node.left.enterQueueAsReader();
+            node.decrementReadCountAndWait();
             node = node.left;
         }
+        node.decrementReadCountAndWait();
         return node;
     }
 
-    private static class Node {
-        private Node left;
-        private Node right;
-        private Integer key;
+    private static class Node extends AbstractConcurrentNode {
+        protected Node left;
+        protected Node right;
 
         public Node(Integer key) {
-            this.key = key;
+            super(key);
         }
     }
 }
