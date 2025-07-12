@@ -26,17 +26,17 @@ public class ConcurrentLinkedList implements IListLikeDataStructure {
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    public void add(int key) {
+    public boolean add(int key) {
         try {
             this.anchor.enterQueueAsWriter();
-            this.anchor.recurseAndAdd(key);
+            return this.anchor.recurseAndAdd(key) != null;
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    public void remove(int key) {
+    public boolean remove(int key) {
         try {
             this.anchor.enterQueueAsWriter();
-            this.anchor.recurseAndRemove(key);
+            return this.anchor.recurseAndRemove(key) != null;
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 

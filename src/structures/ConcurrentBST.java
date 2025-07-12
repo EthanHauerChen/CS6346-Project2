@@ -15,17 +15,18 @@ public class ConcurrentBST implements IListLikeDataStructure {
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    public void add(int key) {
+    public boolean add(int key) {
         try {
             beforeRoot.enterQueueAsWriter();
-            recurseAndAdd(beforeRoot, key);
+            return recurseAndAdd(beforeRoot, key) != null;
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    public void remove(int key) {
+    public boolean remove(int key) {
         try {
             beforeRoot.enterQueueAsWriter();
             beforeRoot = recurseAndRemove(beforeRoot, key);
+            return beforeRoot != null;
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
@@ -43,18 +44,34 @@ public class ConcurrentBST implements IListLikeDataStructure {
     }
 
     private Node recurseAndSearch(Node current, int key) throws InterruptedException {
-        if (current.key == null || current.key < key) { // goes right
-            if (current.right == null) return current.exitRead(null);
-            current.right.enterQueueAsReader();
-            current.decrementReadCountAndWait();
-            return recurseAndSearch(current.right, key);
-        }
+        // if (current.key == null || current.key < key) { // goes right
+        //     if (current.right == null) return current.exitRead(null);
+        //     current.right.enterQueueAsReader();
+        //     current.decrementReadCountAndWait();
+        //     return recurseAndSearch(current.right, key);
+        // }
 
-        if (current.key > key) { // goes left
-           if (current.left == null) return current.exitRead(null);
-           current.left.enterQueueAsReader();
-           current.decrementReadCountAndWait();
-           return recurseAndSearch(current.left, key);
+        // if (current.key > key) { // goes left
+        //    if (current.left == null) return current.exitRead(null);
+        //    current.left.enterQueueAsReader();
+        //    current.decrementReadCountAndWait();
+        //    return recurseAndSearch(current.left, key);
+        // }
+
+        // return current.exitRead(current);
+        while (current.key == null || current.key != key) {
+            if (current.key == null || current.key < key) { // goes right
+                if (current.right == null) return current.exitRead(null);
+                current.right.enterQueueAsReader();
+                current.decrementReadCountAndWait();
+                current = current.right;
+            }
+            else if (current.key > key) { // goes left
+                if (current.left == null) return current.exitRead(null);
+                current.left.enterQueueAsReader();
+                current.decrementReadCountAndWait();
+                current = current.left;
+            }
         }
 
         return current.exitRead(current);

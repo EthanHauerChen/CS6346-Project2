@@ -1,9 +1,11 @@
 package structures;
 
 import java.util.concurrent.locks.*;
+import common.IListLikeDataStructure;
+
 import java.util.HashSet;
 
-public class ConcurrentStack {
+public class ConcurrentStack implements IListLikeDataStructure {
     Node top;
     Object lock = new Object();
     private class Node {
@@ -38,6 +40,17 @@ public class ConcurrentStack {
 
             return value.getValue();
         }
+    }
+
+    public boolean search(int key) { return false; } //no peek operation implemented, so search only exists because this class implements IListLikeDataStructure
+
+    public boolean add(int key) {
+        this.push(key);
+        return true;
+    }
+
+    public boolean remove(int key) { //pop operation does not use a key
+        return pop() != null;
     }
 
     //not required, exists only for convenience during testing
