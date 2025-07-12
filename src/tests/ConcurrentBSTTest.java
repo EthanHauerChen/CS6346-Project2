@@ -38,33 +38,32 @@ public class ConcurrentBSTTest extends AbstractTest {
                 TestUtil.joinThreads(threads);
                 expect(bst.toArrayList().equals(numbers));
 
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException _) {}
         });
 
         it("should remove all items from the list", () -> {
-           try {
-               int NUM_THREADS = 1000;
-               Thread[] threads = new Thread[NUM_THREADS];
+            try {
+                int NUM_THREADS = 1000;
+                Thread[] threads = new Thread[NUM_THREADS];
 
-               ArrayList<Integer> numbers = TestUtil.getListOfNumbers(0, NUM_THREADS);
-               ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledNumbers(numbers);
+                ArrayList<Integer> numbers = TestUtil.getListOfNumbers(0, NUM_THREADS);
+                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledNumbers(numbers);
 
-               for (int i = 0; i < NUM_THREADS; i++) {
-                   int value = numbers.get(i);
-                   bst.add(value);
-               }
+                for (int i = 0; i < NUM_THREADS; i++) {
+                    int value = numbers.get(i);
+                    bst.add(value);
+                }
 
-               for (int i = 0; i < NUM_THREADS; i++) {
-                   int value = shuffledNumbers.get(i);
-                   threads[i] = new Thread(() -> bst.remove(value));
-               }
+                for (int i = 0; i < NUM_THREADS; i++) {
+                    int value = shuffledNumbers.get(i);
+                    threads[i] = new Thread(() -> bst.remove(value));
+                }
 
-               TestUtil.runThreads(threads);
-               TestUtil.joinThreads(threads);
-               System.out.println(bst.toArrayList());
-               expect(bst.toArrayList().equals(new ArrayList<>()));
+                TestUtil.runThreads(threads);
+                TestUtil.joinThreads(threads);
+                expect(bst.toArrayList().equals(new ArrayList<>()));
 
-           } catch (InterruptedException e) {}
+            } catch (InterruptedException _) {}
         });
 
         it("should have mutually exclusive removals", () -> {
@@ -75,8 +74,6 @@ public class ConcurrentBSTTest extends AbstractTest {
                 ArrayList<Integer> numbers = TestUtil.getListOfNumbers(0, NUM_THREADS);
                 ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledNumbers(numbers);
                 HashSet<Integer> leftOverNumbers = new HashSet<>(shuffledNumbers.subList((int) (NUM_THREADS * 0.75), NUM_THREADS));
-                HashSet<Integer> bstSet; //set that will contain the numbers in bst after all removal operations
-                boolean correctItemsLeftInBST = false;
 
                 for (int i = 0; i < NUM_THREADS; i++) {
                     int value = numbers.get(i);
@@ -90,13 +87,11 @@ public class ConcurrentBSTTest extends AbstractTest {
 
                 TestUtil.runThreads(Arrays.copyOfRange(threads, 0, (int) (NUM_THREADS * 0.75)));
                 TestUtil.joinThreads(Arrays.copyOfRange(threads, 0, (int) (NUM_THREADS * 0.75)));
-                bstSet = new HashSet<>(bst.toArrayList());
-                if (leftOverNumbers.equals(bstSet)) correctItemsLeftInBST = true;
-                System.out.println(bst.toArrayList());
-                expect(bst.toArrayList().size() == (int) (NUM_THREADS * 0.25)
-                && correctItemsLeftInBST);
 
-            } catch (InterruptedException e) {}
-            });
+                boolean correctItemsLeftInBST = leftOverNumbers.equals(new HashSet<>(bst.toArrayList()));
+                expect(bst.toArrayList().size() == (int) (NUM_THREADS * 0.25) && correctItemsLeftInBST);
+
+            } catch (InterruptedException _) {}
+        });
     }
 }
