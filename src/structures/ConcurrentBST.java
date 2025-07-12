@@ -89,22 +89,28 @@ public class ConcurrentBST {
         if (current.key == null || current.key < key) { // goes right
             if (current.right != null) current.right.enterQueueAsWriter();
             current.right = recurseAndRemove(current.right, key);
-            current.rwMutex.release();
+            //current.rwMutex.release();
             return current.exitWrite(current);
         }
 
         if (current.key > key) { // goes left
             if (current.left != null) current.left.enterQueueAsWriter();
             current.left = recurseAndRemove(current.left, key);
-            current.rwMutex.release();
+            //current.rwMutex.release();
             return current.exitWrite(current);
         }
-
+        //at this point, we know current != null, and that current.key == key
         if (current.left == null) {
+            // Node rightNode = current.exitWrite(current.right); //shouldn't it return itself (the removed node) instead of left or right child?
+            // current = current.right;
+            // return rightNode;
             return current.exitWrite(current.right);
         }
 
         if (current.right == null) {
+            // Node leftNode = current.exitWrite(current.left);
+            // current = current.left;
+            // return leftNode;
             return current.exitWrite(current.left);
         }
 

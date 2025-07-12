@@ -36,7 +36,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 TestUtil.joinThreads(threads);
                 expect(bst.toArrayList().equals(numbers));
 
-            } catch (InterruptedException _) {}
+            } catch (InterruptedException e) {}
         });
 
         it("should remove all items from the list", () -> {
@@ -62,7 +62,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                System.out.println(bst.toArrayList());
                expect(bst.toArrayList().equals(new ArrayList<>()));
 
-           } catch (InterruptedException _) {}
+           } catch (InterruptedException e) {}
         });
     }
 }
