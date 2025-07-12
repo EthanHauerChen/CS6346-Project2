@@ -38,7 +38,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 TestUtil.joinThreads(threads);
                 expect(bst.toArrayList().equals(numbers));
 
-            } catch (InterruptedException _) {}
+            } catch (InterruptedException e) {}
         });
 
         it("should remove all items from the list", () -> {
@@ -63,7 +63,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 TestUtil.joinThreads(threads);
                 expect(bst.toArrayList().equals(new ArrayList<>()));
 
-            } catch (InterruptedException _) {}
+            } catch (InterruptedException e) {}
         });
 
         it("should have mutually exclusive removals", () -> {
@@ -91,7 +91,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 boolean correctItemsLeftInBST = leftOverNumbers.equals(new HashSet<>(bst.toArrayList()));
                 expect(bst.toArrayList().size() == (int) (NUM_THREADS * 0.25) && correctItemsLeftInBST);
 
-            } catch (InterruptedException _) {}
+            } catch (InterruptedException e) {}
         });
     }
 }
