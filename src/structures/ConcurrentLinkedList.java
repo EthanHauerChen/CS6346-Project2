@@ -1,20 +1,15 @@
 package structures;
 
-import java.util.ArrayList;
-import java.util.concurrent.Semaphore;
+import common.AbstractConcurrentNode;
+import common.IListLikeDataStructure;
 
-public class ConcurrentLinkedList {
+import java.util.ArrayList;
+
+public class ConcurrentLinkedList implements IListLikeDataStructure {
     private final Node anchor = new Node(null);
 
     public String toString() {
         return this.toArrayList().toString();
-    }
-
-    public int size() {
-        try {
-            this.anchor.enterQueueAsReader();
-            return this.anchor.size(0);
-        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public ArrayList<Integer> toArrayList() {
@@ -45,23 +40,11 @@ public class ConcurrentLinkedList {
         } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    private static class Node {
-        private final Semaphore rwQueue = new Semaphore(Integer.MAX_VALUE);
-        private final Semaphore rwMutex = new Semaphore(1);
-        private final Semaphore rcMutex = new Semaphore(1);
-        private final Integer key;
-        private int readCount = 0;
+    private static class Node extends AbstractConcurrentNode {
         private Node next = null;
 
         public Node(Integer key) {
-            this.key = key;
-        }
-
-        private int size(int count) throws InterruptedException {
-            if (this.next == null) return count;
-            this.next.enterQueueAsReader();
-            this.decrementReadCountAndWait();
-            return this.next.size(count + 1);
+            super(key);
         }
 
         private ArrayList<Integer> toArrayList(ArrayList<Integer> list) throws InterruptedException {
@@ -97,42 +80,6 @@ public class ConcurrentLinkedList {
             if (this.next.key == key) return exitWrite(next.exitWrite(this.removeNext()));
             rwMutex.release();
             return this.next.recurseAndRemove(key);
-        }
-
-        private void enterQueueAsReader() throws InterruptedException {
-            this.rwQueue.acquire();
-            this.rwQueue.release();
-            this.incrementReadCountAndWait();
-        }
-
-        private void enterQueueAsWriter() throws InterruptedException {
-            this.rwQueue.acquire();
-            this.rwMutex.acquire();
-            this.rwQueue.release();
-        }
-
-        private <T> T exitRead(T object) throws InterruptedException {
-            this.decrementReadCountAndWait();
-            return object;
-        }
-
-        private <T> T exitWrite(T object) {
-            rwMutex.release();
-            return object;
-        }
-
-        private void incrementReadCountAndWait() throws InterruptedException {
-            this.rcMutex.acquire();
-            this.readCount++;
-            if (readCount == 1) this.rwMutex.acquire();
-            this.rcMutex.release();
-        }
-
-        private void decrementReadCountAndWait() throws InterruptedException {
-            this.rcMutex.acquire();
-            this.readCount--;
-            if (readCount == 0) this.rwMutex.release();
-            this.rcMutex.release();
         }
 
         private Node addNext(int key) {

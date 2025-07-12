@@ -1,10 +1,11 @@
 package structures;
 
 import common.AbstractConcurrentNode;
+import common.IListLikeDataStructure;
 
 import java.util.ArrayList;
 
-public class ConcurrentBST {
+public class ConcurrentBST implements IListLikeDataStructure {
     private Node beforeRoot = new Node(null);
 
     public boolean search(int key) {

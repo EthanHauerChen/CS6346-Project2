@@ -10,10 +10,18 @@ public class TestUtil {
         return new ArrayList<>(IntStream.range(lower, upper).boxed().toList());
     }
 
-    public static ArrayList<Integer> getShuffledNumbers(ArrayList<Integer> numbers) {
-        ArrayList<Integer> shuffledNumbers = new ArrayList<>(numbers);
-        Collections.shuffle(shuffledNumbers);
-        return shuffledNumbers;
+    public static <T> ArrayList<T> getShuffledList(ArrayList<T> list) {
+        ArrayList<T> shuffledList = new ArrayList<>(list);
+        Collections.shuffle(shuffledList);
+        return shuffledList;
+    }
+
+    public static ArrayList<Integer>[] splitNumbers(ArrayList<Integer> numbers, float proportion) {
+        if (proportion < 0 || proportion > 1) throw new RuntimeException("invalid proportion");
+        int splitMark = (int) (numbers.size() * proportion);
+        ArrayList<Integer> first = new ArrayList<>(numbers.subList(0, splitMark));
+        ArrayList<Integer> second = new ArrayList<>(numbers.subList(splitMark, numbers.size()));
+        return new ArrayList[]{first, second};
     }
 
     public static void runThreads(Thread[] threads) {

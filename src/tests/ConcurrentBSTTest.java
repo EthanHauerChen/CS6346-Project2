@@ -27,7 +27,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 Thread[] threads = new Thread[NUM_THREADS];
 
                 ArrayList<Integer> numbers = TestUtil.getListOfNumbers(0, NUM_THREADS);
-                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledNumbers(numbers);
+                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledList(numbers);
 
                 for (int i = 0; i < NUM_THREADS; i++) {
                     int value = shuffledNumbers.get(i);
@@ -47,7 +47,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 Thread[] threads = new Thread[NUM_THREADS];
 
                 ArrayList<Integer> numbers = TestUtil.getListOfNumbers(0, NUM_THREADS);
-                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledNumbers(numbers);
+                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledList(numbers);
 
                 for (int i = 0; i < NUM_THREADS; i++) {
                     int value = numbers.get(i);
@@ -72,7 +72,7 @@ public class ConcurrentBSTTest extends AbstractTest {
                 Thread[] threads = new Thread[NUM_THREADS];
 
                 ArrayList<Integer> numbers = TestUtil.getListOfNumbers(0, NUM_THREADS);
-                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledNumbers(numbers);
+                ArrayList<Integer> shuffledNumbers = TestUtil.getShuffledList(numbers);
                 HashSet<Integer> leftOverNumbers = new HashSet<>(shuffledNumbers.subList((int) (NUM_THREADS * 0.75), NUM_THREADS));
 
                 for (int i = 0; i < NUM_THREADS; i++) {
