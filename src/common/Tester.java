@@ -39,6 +39,10 @@ public class Tester {
         public long getAverageExecutionTime() {
             return this.runResults.stream().mapToLong((r) -> r.executionTime).sum() / this.runResults.size();
         }
+
+        public long getThroughtput(int totalIterations) {
+            return totalIterations / getAverageExecutionTime();
+        }
     }
 
     private class TestRun {
