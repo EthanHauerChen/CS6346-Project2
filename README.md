@@ -4,6 +4,6 @@
 
 2. cd inside `src/`
 
-3. run `javac Main.java`
+3. run `javac -Xlint:unchecked Main.java`
 
 4. run `java Main`
