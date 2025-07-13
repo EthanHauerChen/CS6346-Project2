@@ -1,26 +1,38 @@
 package structures;
 
+import common.AbstractConcurrentNode;
+import common.IListLikeDataStructure;
+
 import java.util.ArrayList;
 
-public class ConcurrentBST {
-    private Node root;
+public class ConcurrentBST implements IListLikeDataStructure {
+    private Node beforeRoot = new Node(null);
 
     public boolean search(int key) {
-        return this.recurseAndSearch(root, key) != null;
+        try {
+            beforeRoot.enterQueueAsReader();
+            return recurseAndSearch(beforeRoot, key) != null;
+        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    public void add(int key) {
-        if (this.root == null) this.root = new Node(key);
-        this.recurseAndAdd(root, key);
+    public boolean add(int key) {
+        try {
+            beforeRoot.enterQueueAsWriter();
+            return recurseAndAdd(beforeRoot, key) != null;
+        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
-    public void remove(int key) {
-        root = this.recurseAndRemove(root, key);
+    public boolean remove(int key) {
+        try {
+            beforeRoot.enterQueueAsWriter();
+            beforeRoot = recurseAndRemove(beforeRoot, key);
+            return beforeRoot != null;
+        } catch (InterruptedException e) { throw new RuntimeException(e); }
     }
 
     public ArrayList<Integer> toArrayList() {
         ArrayList<Integer> list = new ArrayList<>();
-        traverse(root, list);
+        traverse(beforeRoot.right, list);
         return list;
     }
 
@@ -31,72 +43,117 @@ public class ConcurrentBST {
         traverse(current.right, list);
     }
 
-    private Node recurseAndSearch(Node current, int key) {
-        if (current == null) return null;
-        if (current.key == key) return current;
+    private Node recurseAndSearch(Node current, int key) throws InterruptedException {
+        // if (current.key == null || current.key < key) { // goes right
+        //     if (current.right == null) return current.exitRead(null);
+        //     current.right.enterQueueAsReader();
+        //     current.decrementReadCountAndWait();
+        //     return recurseAndSearch(current.right, key);
+        // }
 
-        if (current.key < key) {
-            return recurseAndSearch(current.right, key);
+        // if (current.key > key) { // goes left
+        //    if (current.left == null) return current.exitRead(null);
+        //    current.left.enterQueueAsReader();
+        //    current.decrementReadCountAndWait();
+        //    return recurseAndSearch(current.left, key);
+        // }
 
-        } else {
-            return recurseAndSearch(current.left, key);
-        }
-    }
-
-    private Node recurseAndAdd(Node current, int key) {
-        if (current.key < key) {
-            if (current.right != null) return recurseAndAdd(current.right, key);
-            current.right = new Node(key);
-            return current.right;
-
-        } else if (current.key > key) {
-            if (current.left != null) return recurseAndAdd(current.left, key);
-            current.left = new Node(key);
-            return current.left;
-        }
-
-        return null;
-    }
-
-    private Node recurseAndRemove(Node current, int key) {
-        if (current == null) return null;
-
-        if (key < current.key) {
-            current.left = recurseAndRemove(current.left, key);
-
-        } else if (key > current.key) {
-            current.right = recurseAndRemove(current.right, key);
-
-        } else {
-            if (current.left == null) {
-                return current.right;
-
-            } else if (current.right == null) {
-                return current.left;
-
-            } else {
-                Node temp = findMinFromRight(current.right);
-                current.key = temp.key;
-                current.right = recurseAndRemove(current.right, temp.key);
+        // return current.exitRead(current);
+        while (current.key == null || current.key != key) {
+            if (current.key == null || current.key < key) { // goes right
+                if (current.right == null) return current.exitRead(null);
+                current.right.enterQueueAsReader();
+                current.decrementReadCountAndWait();
+                current = current.right;
+            }
+            else if (current.key > key) { // goes left
+                if (current.left == null) return current.exitRead(null);
+                current.left.enterQueueAsReader();
+                current.decrementReadCountAndWait();
+                current = current.left;
             }
         }
-        return current;
+
+        return current.exitRead(current);
     }
 
-    private Node findMinFromRight(Node node) {
+    private Node recurseAndAdd(Node current, int key) throws InterruptedException {
+        if (current.key == null || current.key < key) { // goes right
+            if (current.right == null) {
+                current.right = new Node(key);
+                return current.exitWrite(current.right);
+            }
+            current.right.enterQueueAsWriter();
+            current.rwMutex.release();
+            return recurseAndAdd(current.right, key);
+        }
+
+        if (current.key > key) { // goes left
+            if (current.left == null) {
+                current.left = new Node(key);
+                return current.exitWrite(current.left);
+            }
+            current.left.enterQueueAsWriter();
+            current.rwMutex.release();
+            return recurseAndAdd(current.left, key);
+        }
+
+        return current.exitWrite(null);
+    }
+
+    private Node recurseAndRemove(Node current, int key) throws InterruptedException {
+        if (current == null) return null;
+
+        if (current.key == null || current.key < key) { // goes right
+            if (current.right != null) current.right.enterQueueAsWriter();
+            current.right = recurseAndRemove(current.right, key);
+            return current.exitWrite(current);
+        }
+
+        if (current.key > key) { // goes left
+            if (current.left != null) current.left.enterQueueAsWriter();
+            current.left = recurseAndRemove(current.left, key);
+            return current.exitWrite(current);
+        }
+
+        //at this point, we know current != null, and that current.key == key
+
+        if (current.left == null) {
+            return current.exitWrite(current.right);
+        }
+
+        if (current.right == null) {
+            return current.exitWrite(current.left);
+        }
+
+        // find node with the smallest key in right subtree
+        current.right.enterQueueAsReader();
+        Node temp = findMinFromRight(current.right);
+
+        // remove node with the smallest key in right subtree
+        current.key = temp.key;
+        current.right.enterQueueAsWriter();
+        current.right = recurseAndRemove(current.right, temp.key);
+
+        return current.exitWrite(current);
+    }
+
+    private Node findMinFromRight(Node node) throws InterruptedException {
         while (node.left != null) {
+            node.left.enterQueueAsReader();
+            node.decrementReadCountAndWait();
             node = node.left;
         }
+        node.decrementReadCountAndWait();
         return node;
     }
 
-    private static class Node {
-        private Node left;
-        private Node right;
-        private Integer key;
+    private static class Node extends AbstractConcurrentNode {
+        protected Node left;
+        protected Node right;
 
         public Node(Integer key) {
-            this.key = key;
+            super(key);
         }
     }
 }
