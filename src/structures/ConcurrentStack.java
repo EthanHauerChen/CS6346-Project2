@@ -35,7 +35,10 @@ public class ConcurrentStack implements IListLikeDataStructure {
     public Integer pop() throws InterruptedException {
         mutex.acquire();
         Node value = top;
-        if (value == null) return null;
+        if (value == null) {
+            mutex.release();
+            return null;
+        }
         if (top.below == null) top = null;
         else top = top.below;
         mutex.release();
