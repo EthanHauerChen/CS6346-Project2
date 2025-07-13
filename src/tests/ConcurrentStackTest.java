@@ -26,7 +26,7 @@ public class ConcurrentStackTest extends AbstractTest {
                 for (int i = 0; i < threads.length; i++) {
                     threads[i] = new Thread(() -> {
                         for (int j = 0; j < NUM_ITERATIONS; j++) {
-                            stack.push(0);
+                            stack.add(0);
                         }
                     });
                 }
@@ -46,12 +46,12 @@ public class ConcurrentStackTest extends AbstractTest {
                 for (int i = 0; i < threads.length-1; i++) {
                     threads[i] = new Thread(() -> {
                         for (int j = 0; j < NUM_ITERATIONS; j++) {
-                            stack.pop();
+                            stack.remove(0);
                         }
                     });
                 }
                 threads[threads.length-1] = new Thread(() -> {
-                    for (int i = 0; i < NUM_ITERATIONS-1; i++) stack.pop();
+                    for (int i = 0; i < NUM_ITERATIONS-1; i++) stack.remove(0);
                 });
                 //at this point, stack should have 1 element left
                 for (int i = 0; i < threads.length; i++) threads[i].start();
@@ -72,7 +72,7 @@ public class ConcurrentStackTest extends AbstractTest {
                     int tempI = i;
                     threads[i] = new Thread(() -> {
                         for (int j = 0; j < NUM_ITERATIONS; j++) {
-                            stack.push(tempI * NUM_ITERATIONS + j);
+                            stack.add(tempI * NUM_ITERATIONS + j);
                         }
                     });
                 }
